@@ -1,4 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import re
 
 
 class HttpGetHandler(BaseHTTPRequestHandler):
@@ -23,10 +24,17 @@ class HttpGetHandler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
-        self.send_response(501)
-        self.send_header('Content-type', 'text/html')
+        self.send_response(301)
+        self.send_header('Location','/support')
         self.end_headers()
-        self.wfile.write('Proverka'.encode())
+        path = self.path
+        if path == '/long_link':
+            content_len = int(self.headers.get('Content-Length'))
+            post = self.rfile.read(content_len)
+            link = re.split(r'link=', str(post))[1]
+            link = re.sub(r'\'', '', link)
+        print(link)
+        return
 
 
 def main():
