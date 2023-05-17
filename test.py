@@ -9,12 +9,17 @@ def generate_code():
 
 
 def add_url(long_url):
-    code = generate_code()
-    with open('urls.csv', 'a', encoding='utf-8', newline='') as file:
-        fieldnames = ['long_url', 'short_url']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writerow({'long_url': long_url,
+    if long_url not in [i[0] for i in get_url()]:
+        code = generate_code()
+        with open('urls.csv', 'a', encoding='utf-8', newline='') as file:
+            fieldnames = ['long_url', 'short_url']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writerow({'long_url': long_url,
                             'short_url': code})
+        return [i[1] for i in get_url() if i[0] == long_url][0]
+    else:
+        long_url = [i[0] for i in get_url() if i[0] == long_url][0]
+    return f'Ваша ссылка "{long_url}" уже есть в базе'
 
     #     with open('urls.csv', 'w', encoding='utf-8', newline='') as file:
     #         fieldnames = ['long_url', 'short_url']
@@ -23,14 +28,15 @@ def add_url(long_url):
     #         add_url(long_url)
 
 
-def get_url(long_url):
+def get_url():
+    list_long_url = []
     with open('urls.csv', newline='') as file:
-        reader = csv.DictReader(file)
-        
+        reader = csv.reader(file, delimiter=',')
         for row in reader:
-            print(row['long_url'])
+            list_long_url.append(row)
+    return list_long_url
 
 
 if __name__ == '__main__':
-    add_url('https://ya.ru')
-    # get_url('https://ya.ru')
+    print(add_url('https://ya.1ru'))
+    #get_url()
