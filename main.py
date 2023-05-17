@@ -1,46 +1,67 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import re
+import http.server
+import string
+import json
+import random
+import csv
 
 
-class HttpGetHandler(BaseHTTPRequestHandler):
-    """Обработчик с реализованным методом do_GET."""
+class HttpGetHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        path = self.path
-        if path == '/':
-            path = '/index'
-
-        try:
-            file = open(f'cgi-bin{path}.html', 'r', encoding='utf-8')
-        except FileNotFoundError:
-            pass
-
-        message = file.read()
-        file.close()
-        self.wfile.write(bytes(message, encoding='UTF-8'))
-        return
+        if self.path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write('''
+                <html>
+                    <head>
+                        <meta charset="UTF-8"/>
+                    </head>
+                    <body>
+                        <form method="POST">
+                            <label for="long_url">Длинный URL:</label><br>
+                            <input type="text" id="long_url" name="long_url"><br>
+                            <button type="submit">Отправить</button>
+                        </form>
+                    </body>
+                </html>
+            '''.encode())
 
     def do_POST(self):
-        self.send_response(301)
-        self.send_header('Location','/support')
-        self.end_headers()
-        path = self.path
-        if path == '/long_link':
-            content_len = int(self.headers.get('Content-Length'))
-            post = self.rfile.read(content_len)
-            link = re.split(r'link=', str(post))[1]
-            link = re.sub(r'\'', '', link)
-        print(link)
-        return
+        if self.path == '/':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            long_url = post_data
+            short_code = self.generate_code()
+            self.save_url(long_url, short_code)
+            response = {
+                'short_url': f'http://{self.server.server_name}:{self.server.server_port}/{short_code}'}
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write('Короткая ссылка '.encode())
+            self.wfile.write(json.dumps(response['short_url']).encode())
+            self.wfile.write(json.dumps(self.read_url()).encode())
 
+    def generate_code(self):
+        letters = string.ascii_lowercase + string.digits
+        return ''.join(random.choice(letters) for i in range(6))
 
-def main():
-    server = HTTPServer(('', 8000), HttpGetHandler)
-    server.serve_forever()
+    # def save_url(self, long_url, short_code):
+    #     with open('urls.csv', mode='ab') as file:
+    #         link = {'code': short_code,
+    #                 'long_url': long_url}
+    #         csv.dump(link, file)
+
+    # def read_url(self):
+    #     all_urls = []
+    #     with open('urls.csv', 'rb') as file:
+    #         all_urls = csv.load(file)
+    #     for key, value in all_urls.items():
+    #         print(key, value)
 
 
 if __name__ == '__main__':
-    main()
+    server_address = ('', 8000)
+    httpd = http.server.HTTPServer(server_address, HttpGetHandler)
+    httpd.serve_forever()
