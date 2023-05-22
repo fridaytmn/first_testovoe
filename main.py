@@ -1,4 +1,4 @@
-import http.server
+import http.server, urllib.parse
 import string
 import random
 import csv
@@ -37,10 +37,10 @@ class HttpGetHandler(http.server.BaseHTTPRequestHandler):
             output += '<h1>Short URL</h1>'
             output += '<h3><a href="/short_url/new">Сократить ссылку</a></h3>'
             output += '<p>Полный адрес : Сокращенная ссылка</p>'
-            output += '<h4>Ваши ссылки</h4>'
-            for long_url, short_url in read_url().items():
-                output += f'{long_url} : {short_url[0]}'
-                output += '<br>'
+            output += '<h4>Ваши короткие ссылки</h4>'
+            # for long_url, short_url in read_url().items():
+            #     output += f'Короткая версия: {short_url[0]} этой ссылки {long_url}'
+            #     output += '<br>'
             output += '</body></html>'
             self.wfile.write(output.encode())
 
@@ -63,7 +63,41 @@ class HttpGetHandler(http.server.BaseHTTPRequestHandler):
 
             self.wfile.write(output.encode())
 
-        if self.path:
+        if self.path.endswith('/result'):
+            self.send_response(200)
+            self.send_header('content-type', 'text/html')
+            self.end_headers()
+
+            output = ''
+            output += '<html><head>'
+            output += '''<script>
+            function copyText() {
+            navigator.clipboard.writeText
+            ("Geeksforgeeks is best learning platform.");}
+            </script>'''
+            output += '<meta charset="UTF-8"/>'
+            output += '</head><body>'
+            output += '<h1>Результат сокращения</h1>'
+
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
+            content_len = int(self.headers.get('Content-length'))
+            pdict['CONTENT-LENGTH'] = content_len
+            if ctype == "multipart/form-data":
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                long_url = fields.get('long_url')
+
+                output += long_url[0]
+
+            output += '<form method="POST" enctype="multipart/form-data" action="/short_url/new">'
+            output += '<input name="long_url" type="text" placeholder="Длинная ссылка">'
+            output += '<input type="submit" value="Копировать" onclick="copyText()">'
+            output += '</form>'
+            output += '</body></html>'
+
+            self.wfile.write(output.encode())
+
+        if self.path[1:] in [link[0] for link in read_url().values()]:
             for long_url, code in read_url().items():
                 if self.path[1:] == code[0]:
                     self.send_response(301)
@@ -87,7 +121,7 @@ class HttpGetHandler(http.server.BaseHTTPRequestHandler):
 
             self.send_response(301)
             self.send_header('Content-type', 'text/html')
-            self.send_header('Location', '/short_url')
+            self.send_header('Location', '/result')
             self.end_headers()
 
 
