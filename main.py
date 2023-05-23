@@ -5,6 +5,15 @@ import csv
 import cgi
 
 
+def check_in_db(long_url):
+    if long_url in read_url().keys():
+        short_link = f'http://localhost:8000/{read_url()[long_url][0]}'
+    else:
+        save_url(long_url, generate_code())
+    short_link = f'http://localhost:8000/{read_url()[long_url][0]}'
+    return short_link
+
+
 def save_url(long_url, short_code):
     with open('urls.csv', 'a', newline='') as file:
         writer = csv.writer(file)
@@ -68,18 +77,7 @@ class HttpGetHandler(http.server.BaseHTTPRequestHandler):
             self.send_header('content-type', 'text/html')
             self.end_headers()
 
-            output = ''
-            output += '<html><head>'
-            output += '''<script>
-            function copyText() {
-            navigator.clipboard.writeText
-            ("Geeksforgeeks is best learning platform.");}
-            </script>'''
-            output += '<meta charset="UTF-8"/>'
-            output += '</head><body>'
-            output += '<h1>Результат сокращения</h1>'
-
-            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            ctype, pdict = cgi.parse_header(self.headers['content-type'])
             pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
             content_len = int(self.headers.get('Content-length'))
             pdict['CONTENT-LENGTH'] = content_len
@@ -88,6 +86,17 @@ class HttpGetHandler(http.server.BaseHTTPRequestHandler):
                 long_url = fields.get('long_url')
 
                 output += long_url[0]
+            
+            output = ''
+            output += '<html><head>'
+            output += '''<script>
+            function copyText() {
+            navigator.clipboard.writeText
+            ('%s');}
+            </script>''' % check_in_db(long_url)
+            output += '<meta charset="UTF-8"/>'
+            output += '</head><body>'
+            output += '<h1>Результат сокращения</h1>'
 
             output += '<form method="POST" enctype="multipart/form-data" action="/short_url/new">'
             output += '<input name="long_url" type="text" placeholder="Длинная ссылка">'
@@ -126,6 +135,6 @@ class HttpGetHandler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    server_address = ('', 8000)
+    server_address = ('', 8080)
     httpd = http.server.HTTPServer(server_address, HttpGetHandler)
     httpd.serve_forever()
