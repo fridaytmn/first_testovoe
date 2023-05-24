@@ -5,12 +5,10 @@ import html
 import csv
 import string
 import random
-import os
 
 form = cgi.FieldStorage()
 long_url = form.getfirst("long_url", "не задано")
 long_url = html.escape(long_url)
-
 
 
 def check_in_db(long_url):
@@ -38,7 +36,6 @@ def generate_code():
     letters = string.ascii_lowercase + string.digits
     return ''.join(random.choice(letters) for i in range(6))
 
-
 print("Content-type: text/html\n")
 print('''<!DOCTYPE HTML>
         <html>
@@ -52,7 +49,6 @@ print('''<!DOCTYPE HTML>
             <title>Your short link</title>
         </head>
         <body>''' % check_in_db(long_url))
-print(os.environ)
 print("<h1>Your short link!</h1>")
 print(f'<p>Short_link: {check_in_db(long_url)}</p>')
 print('<input type="submit" value="Copy" onclick="copyText()">')
